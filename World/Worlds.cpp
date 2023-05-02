@@ -1,50 +1,4 @@
-﻿#include "World/World.h"
-#include "World_builder.h"
-#include "Materials/Reflective.h"
-#include "Materials/Transparent.h"
-
-#include "Cameras/Fisheye.h"
-#include "Cameras/Pinhole.h"
-#include "Cameras/StereoCamera.h"
-#include "Cameras/ThinLens.h"
-
-#include "GeometricObjects/Instance.h"
-
-#include "GeometricObjects/BeveledObjects/BeveledBox.h"
-
-#include "GeometricObjects/CompoundObjects/Box.h"
-#include "GeometricObjects/CompoundObjects/Grid.h"
-#include "GeometricObjects/CompoundObjects/RoundRimmedBowl.h"
-#include "GeometricObjects/CompoundObjects/SolidCylinder.h"
-#include "GeometricObjects/CompoundObjects/SolidCone.h"
-#include "GeometricObjects/CompoundObjects/ThickRing.h"
-
-#include "GeometricObjects/PartObjects/ConvexPartSphere.h"
-
-#include "GeometricObjects/Triangles/Triangle.h"
-
-#include "GeometricObjects/Primitives/Plane.h"
-#include "GeometricObjects/Primitives/Torus.h"
-
-
-
-#include "Lights/Directional.h"
-#include "Lights/PointLight.h"
-
-#include "Materials/Matte.h"
-#include "Materials/SV_Matte.h"
-#include "Materials/Reflective.h"
-
-#include "Textures/Checker3D.h"
-#include "Textures/ImageTexture.h"
-
-#include "Samplers/MultiJittered.h"
-#include "Samplers/Jittered.h"
-
-#include "Tracers/RayCast.h"
-
-#include "World/Worlds.h"
-
+﻿#include "World/Worlds.h"
 
 RGBColor lightRed(1, 0.4, 0.4);
 RGBColor darkRed(0.9, 0.1, 0.1);
@@ -77,9 +31,13 @@ RGBColor darkPurple(0.5, 0, 1);
 
 RGBColor lightLightGrey(0.9);
 RGBColor lightGrey(0.7);
+RGBColor darkGrey(0.3);
+RGBColor darkBlueGrey(0.3, 0.3, 0.5);
 RGBColor grey(0.25);
 RGBColor darkDarkGrey(0.2, 0.2, 0.2);
 
+RGBColor darkBrown(0.18, 0.15, 0.14);
+RGBColor mediumBrown(0.4, 0.302, 0.243);
 RGBColor darkBlack(0, 0, 0);
 
 
@@ -154,12 +112,23 @@ void build_sphere_world(World* w) {
 
     w->init_viewplane();
 
-    w->init_ambient_light();
+//    w->init_ambient_light();
+//    Directional* lt = new Directional();
+////    lt->set_shadows(true);
+//    lt->set_shadows(false);
+//    lt->set_direction(300, 100, 200);
+//    lt->scale_radiance(7.0);
+//    w->add_light(lt);
+
+
+    w->init_ambient_light();                 // from practical world
     Directional* lt = new Directional();
-    lt->set_shadows(true);
-    lt->set_direction(300, 100, 200);
-    lt->scale_radiance(7.0);
+//    lt->set_shadows(true);
+    lt->set_shadows(false);
+    lt->set_direction(10, -30, 10);
+    lt->scale_radiance(8.5);
     w->add_light(lt);
+
 
     w->tracer_ptr = new RayCast(w);
 
@@ -177,7 +146,7 @@ struct ColorBottomTop {
 
 void build_city_helper(World* w, const std::vector<ColorBottomTop>& buildings) {
     for (const ColorBottomTop& bldg : buildings) {
-        add_bb_helper(w, bldg.color, bldg.bottom, bldg.top);
+        add_bb_helper(w, bldg.color, bldg.bottom, bldg.top, Vector3D());
     }
 }
 void build_city(World* w) {
@@ -245,8 +214,9 @@ void build_city_world(World* w, double distance) {
 }
 
 
-#define SPACING 5
+#define SPACING 3
 #define SIDE 1
+#define HEIGHT 6
 
 void add_checkerboard(World* w, const RGBColor& c1, const RGBColor& c2, int size) {
     Plane* plane = new Plane(Point3D(-30, -30, 0), Normal(0, 0, 1));
@@ -255,34 +225,70 @@ void add_checkerboard(World* w, const RGBColor& c1, const RGBColor& c2, int size
 }
 
 void build_practical(World *w) {
-    for (int i = 0; i < 60; i += SPACING) {
-        add_bb_helper(w, orange, Point3D( i, 0, 0),     SIDE, SIDE, 4);
-        add_bb_helper(w, orange, Point3D( 0, 3 * SPACING + i, 0), SIDE, SIDE, 4);
+//    for (int i = 0; i < 60; i += SPACING) {
+//        add_bb_helper(w, orange, Point3D( i, 0, 0),     SIDE, SIDE, HEIGHT, Vector3D());
+//        add_bb_helper(w, orange, Point3D( 0, 3 * SPACING + i, 0), SIDE, SIDE, HEIGHT, Vector3D());
 
-        add_bb_helper(w, cyan, Point3D( i, SPACING, 0), SIDE, SIDE, 8);
+//        add_bb_helper(w, cyan, Point3D( i, SPACING, 0), SIDE, SIDE, 2 * HEIGHT, Vector3D());
 
-        add_bb_helper(w, green, Point3D( i,  2 * SPACING, 0), SIDE, SIDE, 16);
-    }
+//        add_bb_helper(w, green, Point3D( i,  2 * SPACING, 0), SIDE, SIDE, 4 * HEIGHT, Vector3D());
+//    }
 
-    add_checkerboard(w, lightGrey, white, 1);
+//    add_checkerboard(w, lightGrey, white, 2);
+
+    int num_samples = 1;
+
+    AmbientOccluder* ambient_occluder = new AmbientOccluder;
+    ambient_occluder->set_sampler(new MultiJittered(num_samples));
+    ambient_occluder->set_min_amount(0.5);
+    w->set_ambient_light(ambient_occluder);
+
+    Image* image = new Image;
+    image->read_ppm_file("/Users/ethan/Desktop/RT_sparkle_shadows 2/PPM_Images/sunset.ppm");
+
+    SphericalMap* spherical_map = new SphericalMap;
+
+    ImageTexture* image_texture = new ImageTexture(image);
+    image_texture->set_mapping(spherical_map);
+
+    std::shared_ptr<SV_Matte> sv_matte = std::make_shared<SV_Matte>();
+    sv_matte->set_ka(1.0);
+    sv_matte->set_kd(0.05);
+    sv_matte->set_cd(image_texture);
+
+    Instance* sphere = new Instance(new Sphere());
+    sphere->scale(1000000);
+    sphere->set_material(sv_matte);
+    sphere->set_shadows(false);
+    sphere->rotate_x(90);
+    w->add_object(sphere);
+
+    add_checkerboard(w, grey, lightGrey, 2);
 }
 void build_practical_world(World* w, double distance) {
-    Pinhole* camera = new Pinhole;
-    camera->set_eye(-6, -5, 9);
-    camera->set_lookat(-1, 0, 7);
-    camera->set_view_distance(distance);    // camera->set_view_distance(800.0);
+//    Pinhole* camera = new Pinhole;
+    Fisheye* camera = new Fisheye;
+    camera->set_fov(270);
+    camera->set_rectangular(true);
+
+//    camera->set_eye(-6, -5, 2 * HEIGHT);
+    camera->set_eye(-6, -6, 1.5 * HEIGHT);
+    camera->set_lookat(0, 0, HEIGHT);
+//    camera->set_lookat(-1, 0, 7);
+//    camera->set_view_distance(distance);    // camera->set_view_distance(800.0);
     camera->set_up_vector(1, 1, 1);
     camera->compute_uvw();
     w->set_camera(camera);
 
     w->init_viewplane();
 
-    w->init_ambient_light();
-    Directional* lt = new Directional();
-    lt->set_shadows(true);
-    lt->set_direction(10, -30, 10);
-    lt->scale_radiance(8.5);
-    w->add_light(lt);
+//    w->init_ambient_light();
+//    Directional* lt = new Directional();
+//    lt->set_shadows(true);
+////    lt->set_shadows(false);
+//    lt->set_direction(10, -30, 10);
+//    lt->scale_radiance(8.5);
+//    w->add_light(lt);
 
     w->tracer_ptr = new RayCast(w);
 
@@ -294,7 +300,7 @@ void build_practical_world(World* w, double distance) {
 
 void build_sphere_triangle_box(World* w) {    
     add_sphere_helper(w, lightGreen, Point3D(1.7, -0.2, 1.7), SIDE/2.5);
-    add_bb_helper(w, orange, Point3D( 2, 0, 0), 0.75 * SIDE, SIDE, 2.5);
+    add_bb_helper(w, orange, Point3D( 2, 0, 0), 0.75 * SIDE, SIDE, 2.5, Vector3D());
 
     std::shared_ptr<Phong> phong = std::make_shared<Phong>();
     phong->set_cd(cyan);
@@ -416,9 +422,6 @@ void build_thinlens(World* w, double focal_distance) {
 }
 
 
-
-
-
 void build_figure_10_10(World* w, CHOICE choice) {
     switch(choice) {
         case A: build_thinlens(w, 50.0); break;
@@ -455,11 +458,11 @@ void build_cone_helper(World* w, const Point3D& posn, const RGBColor& color, dou
     w->add_object(iscone);
 }
 
-void build_cylinder_helper(World* w, const Point3D& posn, const RGBColor& color, double b, double t, double r, int degree) {
+void build_cylinder_helper(World* w, const Point3D& posn, const RGBColor& color, double b, double t, double r, double x, double y, double z) {
     Instance* iscylinder = new Instance(new SolidCylinder(b,t,r));
-    iscylinder->rotate_y(0);
-    iscylinder->rotate_z(degree);
-    iscylinder->rotate_x(90);
+    iscylinder->rotate_y(x);
+    iscylinder->rotate_z(y);
+    iscylinder->rotate_x(z);
     iscylinder->translate(posn);
 //    iscylinder->set_material(m_ptr);
 
@@ -474,10 +477,11 @@ void build_cylinder_helper(World* w, const Point3D& posn, const RGBColor& color,
     w->add_object(iscylinder);
 }
 
-void build_ring_helper(World* w, const Point3D& posn, const RGBColor& color, const RingDims& rd, int r, std::shared_ptr<Material> m_ptr) {
+void build_ring_helper(World* w, const Point3D& posn, const RGBColor& color, const RingDims& rd, double rot_x, double rot_y, double rot_z, std::shared_ptr<Material> m_ptr) {
     Instance* isring = new Instance(new ThickRing(rd.bottom, rd.top, rd.inner, rd.outer));
-    isring->rotate_y(0);
-    isring->rotate_z(r);
+    isring->rotate_x(rot_x);
+    isring->rotate_x(rot_y);
+    isring->rotate_z(rot_z);
     isring->translate(posn);
     isring->set_material(m_ptr);
     w->set_material(isring, color);
@@ -486,10 +490,10 @@ void build_ring_helper(World* w, const Point3D& posn, const RGBColor& color, con
 
 
 void build_axis(World* w, double length, double width) {
-    add_bb_helper(w, red, Point3D(0, 0, 0),  length, width, width);
+    add_bb_helper(w, red, Point3D(0, 0, 0),  length, width, width, Vector3D());
     add_triangle_helper(w, red, Point3D(length, 0, 1.2 * width), Point3D(length, 0, -0.6 * width), Point3D(length + 1.2 * width, 0, 0.6 * width));
 
-    add_bb_helper(w, darkBlue, Point3D(0, 0, 0),  width, length, width);
+    add_bb_helper(w, darkBlue, Point3D(0, 0, 0),  width, length, width, Vector3D());
     add_triangle_helper(w, darkBlue, Point3D(0, length, 1.2 * width), Point3D(0, length, -0.6 * width), Point3D(0, length + 1.2 * width, 0.6 * width));
 }
 
@@ -505,38 +509,40 @@ Instance* add_torus_helper(World* w, const RGBColor& color, double a, double b,
 }
 
 
+Instance* build_partannulus_helper(World* w, const RGBColor& color,
+                                        double i_r, double o_r,
+                                        double azimuth_min, double azimuth_max,
+                                        Point3D location, Point3D scale, Vector3D rotation,
+                                        std::shared_ptr<Material> m_ptr,
+                                        bool up=true) {
+    Instance* is_part_annulus = new Instance(new PartAnnulus(location.y, i_r, o_r, azimuth_min, azimuth_max, up));
+    w->set_material(is_part_annulus, color);
 
-void build_mcdonalds(World* w){
-//    //camera
-//    Pinhole* ptr = new Pinhole;
-//    ptr->set_eye(-2, -12, 14);        // overhead
-//    ptr->set_lookat(0, 10, -10);     // overhead
-//    ptr->set_view_distance(200);    // overhead
-//    ptr->set_up_vector(0, 0, 1);
-//    ptr->compute_uvw();
-//    w->set_camera(ptr);
+    is_part_annulus->rotate_x(rotation.x);
+    is_part_annulus->rotate_y(rotation.x);
+    is_part_annulus->rotate_z(rotation.z);
 
-//    //viewplane
-//    int num_samples = 25;
-//    w->vp.set_hres(VIEWPLANE_HRES);
-//    w->vp.set_vres(VIEWPLANE_VRES);
-//    w->vp.set_sampler(new Jittered(num_samples));
-//    w->vp.set_pixel_size(0.5);
-//    w->vp.set_samples(num_samples);
+    is_part_annulus->scale(scale);
 
-//    //lights
-//    Ambient* ambient_ptr = new Ambient;
-//    ambient_ptr->scale_radiance(0.2);
-//    w->set_ambient_light(ambient_ptr);
-//    w->background_color =  black;//RGBColor(0.9, 0.9, 0.9);
-//    w->tracer_ptr = new RayCast(w);
+    is_part_annulus->translate(location);
 
-//    Directional* lt = new Directional();
-//    lt->set_shadows(true);
-//    lt->set_direction(-30, 7, 10);
-//    lt->scale_radiance(8.5);
-//    w->add_light(lt);
+    w->set_material(is_part_annulus, color);
+    w->add_object(is_part_annulus);
+    return is_part_annulus;
+}
 
+
+Disk* build_disk_helper(World* w, const RGBColor& color,
+                                        Point3D center, Normal normal, double radius) {
+    Disk* disk = new Disk(center, normal, radius);
+    w->set_material(disk, color);
+    w->add_object(disk);
+    return disk;
+}
+
+
+
+void build_mcdonalds(World* w) {
     //plane
     float ka = 0.25;
     float kd = 0.75;
@@ -560,50 +566,30 @@ void build_mcdonalds(World* w){
     reflect1->set_kd(1.75);
     reflect1->set_cd(lightBlue);
 
-    //also part of the orginal
-    //orginal
-//    Sphere* sphere2 = new Sphere(Point3D(2.5, 0.8, 4), 2.5);
-//    sphere2->set_material(reflect1);
-//    w->add_object(sphere2);
+    Sphere* sphere2 = new Sphere(Point3D(2.5, 0.8, 4), 2.5);
+    sphere2->set_material(reflect1);
+    w->add_object(sphere2);
 
-    //Orginal McDonalds Scene
-    //orginal
-//    RingDims rd = RingDims(1, 2, 6.5, 8);
-//    build_ring_helper(    w,         Point3D(  -2,    0,  -0.5), yellow, rd, 50, phong_ptr36);
-//    build_ring_helper(    w,         Point3D(-12,    6,   1),   yellow, rd, 45, phong_ptr36);
-//    add_bb_helper(        w, orange, Point3D(  0,    6,   0),   Point3D(3, 7, 6));
-//    build_cone_helper(    w,         Point3D(  -2,   3.5, 0),   cyan, 4.0, 1.5);
-//    build_cone_helper(    w,         Point3D(  2,   -2.5, 0),   darkBlue,   5.0, 1.5);
-//    build_cylinder_helper(w,         Point3D( -2.5, -1,   0),   green, 0.0, 3.0, 1.0, 0); //added 0 because degrees was added to the implementation
-//    add_triangle_helper(  w, red,    Point3D( -2.8,  2.5, 2.5), Point3D(-2.5, -7.5, 0.5), Point3D(-0.5, -3, 1.5));
+    RingDims rd = RingDims(1, 2, 6.5, 8);
+    build_ring_helper(    w,         Point3D(  -2,    0,  -0.5), yellow, rd, 0, 0, 50, phong_ptr36);
+    build_ring_helper(    w,         Point3D(-12,    6,   1),   yellow, rd, 0, 0, 45, phong_ptr36);
 
-    //Edited version for the disccusion post
-    RingDims rd = RingDims(.5, 1, 4, 5);
-    build_ring_helper(w, Point3D(-11, 0, 10), darkBlue, rd, 0, phong_ptr36);
-    build_ring_helper(w, Point3D(0, 1, 10), black, rd, 0, phong_ptr36);
-    build_ring_helper(w, Point3D(11, 0, 10), red, rd, 0, phong_ptr36);
-    build_ring_helper(w, Point3D(-5.5, 0.5, 5), yellow, rd, 15, phong_ptr36);
-    build_ring_helper(w, Point3D(5.5, 0.5, 5), green, rd, -15, phong_ptr36);
+    add_bb_helper(        w, orange, Point3D(  0,    6,   0),   Point3D(3, 7, 6), Vector3D());
+    build_cone_helper(    w,         Point3D(  -2,   3.5, 0),   cyan, 4.0, 1.5);
+    build_cone_helper(    w,         Point3D(  2,   -2.5, 0),   darkBlue,   5.0, 1.5);
+    build_cylinder_helper(w,         Point3D( -2.5, -1,   0),   green, 0.0, 3.0, 1.0, 0, 0, 90);
+    add_triangle_helper(  w, red,    Point3D( -2.8,  2.5, 2.5), Point3D(-2.5, -7.5, 0.5), Point3D(-0.5, -3, 1.5));
 
-   //orginal
-//    add_checkerboard(w, red, white, 1);
-    //changed for olympic
-    add_checkerboard(w, grey, white, 1);
-
+    add_checkerboard(w, white, darkBlue, 3);
 }
 
 void build_mcdonalds_world(World* w) {
     //camera
     Pinhole* ptr = new Pinhole;
-    //orginal
-//    ptr->set_eye(-2, -12, 14);        // overhead
-//    ptr->set_lookat(0, 10, -10);     // overhead
-//    ptr->set_view_distance(200);    // overhead
-    //adjusted for olympic rings
-    ptr->set_eye(-2, -50, 14);        // overhead
+    ptr->set_eye(-2, -12, 14);        // overhead
+//    ptr->set_eye(-2, -30, 14);        // overhead
     ptr->set_lookat(0, 10, -10);     // overhead
     ptr->set_view_distance(200);    // overhead
-
     ptr->set_up_vector(0, 0, 1);
     ptr->compute_uvw();
     w->set_camera(ptr);
@@ -620,17 +606,12 @@ void build_mcdonalds_world(World* w) {
     Ambient* ambient_ptr = new Ambient;
     ambient_ptr->scale_radiance(0.2);
     w->set_ambient_light(ambient_ptr);
-    //orginal
-//    w->background_color =  black;//RGBColor(0.9, 0.9, 0.9);
-    w->background_color = white;
+    w->background_color =  black;//RGBColor(0.9, 0.9, 0.9);
     w->tracer_ptr = new RayCast(w);
 
     Directional* lt = new Directional();
     lt->set_shadows(true);
-    //orginal
-//    lt->set_direction(-30, 7, 10);
-    //changed for olympics
-    lt->set_direction(0, -10, 10);
+    lt->set_direction(-30, 7, 10);
     lt->scale_radiance(8.5);
     w->add_light(lt);
 
@@ -641,43 +622,47 @@ void build_mcdonalds_world(World* w) {
     build_mcdonalds(w);
 }
 
-void amoung_us_helper(World* w, double bodyHeight, Point3D center) {
 
-    //finishes
-    std::shared_ptr<Reflective> reflect2 = std::make_shared<Reflective>();
-    reflect2->set_kr(0.0);
-    reflect2->set_ka(0.25);
-    reflect2->set_kd(0.75);
-    reflect2->set_cd(red);
-
-    std::shared_ptr<Reflective> reflect3 = std::make_shared<Reflective>();
-    reflect3->set_kr(0.0);
-    reflect3->set_ka(0.25);
-    reflect3->set_kd(0.75);
-    reflect3->set_cd(white);
-
-    //body
-    build_cylinder_helper(w, center + Point3D(0, 0, bodyHeight * .35), red, 0, bodyHeight, bodyHeight * .44, 00);
-    Sphere* sphere2 = new Sphere(center + Point3D(0, 0, bodyHeight * .35 + bodyHeight), bodyHeight * .44);
-    sphere2->set_material(reflect2);
-    w->add_object(sphere2);
-    //mask
-    build_cylinder_helper(w, center + Point3D(bodyHeight * .18, bodyHeight * -.38, bodyHeight * 1.3), white, 0, bodyHeight * .35, bodyHeight * .15, 90);
-    Sphere* sphere3 = new Sphere(center + Point3D(bodyHeight * .18, bodyHeight * -.38, bodyHeight * 1.3), bodyHeight * .15);
-    sphere3->set_material(reflect3);
-    w->add_object(sphere3);
-    Sphere* sphere4 = new Sphere(center + Point3D(bodyHeight * -.18, bodyHeight * -.38, bodyHeight * 1.3), bodyHeight * .15);
-    sphere4->set_material(reflect3);
-    w->add_object(sphere4);
-//    //legs
-//    build_cylinder_helper(w, Point3D(-0.32, 0, 0), red, 0, .6, .3, 00);
-//    build_cylinder_helper(w, Point3D(0.32, 0, 0), red, 0, .6, .3, 00);
-//    //backpack
-//    add_bb_helper(w, red, Point3D(-0.6, .5, .7), Point3D(0.6, 1, 2.2));
+void add_bb_facing_center_at_offset_rotation(World* w, const RGBColor& color, double radius, double theta, double z, double dx, double dy, double dz, double rotation_y, double offset_rotation) {
+    double x = radius * cos(qDegreesToRadians(theta));
+    double y = radius * sin(qDegreesToRadians(theta));
+    double perpendicular = theta + 90;
+    add_bb_helper( w, color, Point3D(  x,  y,  z),  dx, dy, dz, Vector3D(0, rotation_y, perpendicular - offset_rotation));
+//    qDebug() << "in add_bb_facing_center_at(), theta is: " << theta;
 }
 
-void build_amoungUs(World* w){
 
+void add_bb_facing_center_at(World* w, const RGBColor& color, double radius, double theta, double z, double dx, double dy, double dz, double rotation_y) {
+    double x = radius * cos(qDegreesToRadians(theta));
+    double y = radius * sin(qDegreesToRadians(theta));
+    double perpendicular = theta + 90;
+    add_bb_helper( w, color, Point3D(  x,  y,  z),  dx, dy, dz, Vector3D(0, rotation_y, perpendicular));
+}
+
+double add_double_bb_facing_center_at(World* w, const RGBColor& color, double radius, double theta, double dtheta, double dx, double dy, double dz) {
+    add_bb_facing_center_at(w, color, radius, theta, 4, dx, dy, dz, 0);
+//    add_bb_facing_center_at(w, darkBlue, radius, theta + dtheta, 4, dx, dy, dz, 0);
+//    qDebug() << "in triple, dx: " << dx << ", dy: " << dy << "dz: " << dz;
+    add_bb_facing_center_at(w, mediumBrown, radius, theta + dtheta/2,  8/9.0 * dz, dy, dy, 8*dz/9.0, 90);
+    return theta;
+}
+
+double add_triple_bb_facing_center_at(World* w, const RGBColor& color, double radius, double theta, double dtheta, double dx, double dy, double dz) {
+    add_bb_facing_center_at(w, color, radius, theta, 4, dx, dy, dz, 0);
+    add_bb_facing_center_at(w, color, radius, theta + dtheta, 4, dx, dy, dz, 0);
+//    qDebug() << "in triple, dx: " << dx << ", dy: " << dy << "dz: " << dz;
+    add_bb_facing_center_at(w, mediumBrown, radius, theta + dtheta/2,  4/5.0 * dz, dy, dy, 5*dz/9.0, 90);
+    return theta + dtheta;
+}
+
+
+#define ROCKS 8
+#define RADIUS 10
+
+
+//#define ROCKS 32
+
+void build_stonehenge(World* w){
     //plane
     float ka = 0.25;
     float kd = 0.75;
@@ -694,77 +679,89 @@ void build_amoungUs(World* w){
     plane_ptr->set_material(phong_ptr36);
     w->add_object(plane_ptr);
 
-    //build
-    std::shared_ptr<Reflective> reflect1 = std::make_shared<Reflective>();
-    reflect1->set_kr(2.5);
-    reflect1->set_ka(1.25);
-    reflect1->set_kd(1.75);
-    reflect1->set_cd(lightBlue);
+//    build_partannulus_helper(w, red, 4, 5,
+//                               0, 180, Point3D(-2, -2, 10), Point3D(1, 1, 1), Vector3D(0, 45, 180), phong_ptr36);
 
-    std::shared_ptr<Reflective> reflect2 = std::make_shared<Reflective>();
-    reflect2->set_kr(0.0);
-    reflect2->set_ka(0.25);
-    reflect2->set_kd(0.75);
-    reflect2->set_cd(red);
 
-    std::shared_ptr<Reflective> reflect3 = std::make_shared<Reflective>();
-    reflect3->set_kr(0.0);
-    reflect3->set_ka(0.25);
-    reflect3->set_kd(0.75);
-    reflect3->set_cd(white);
+//    build_cone_helper(w, Point3D(0, 0,0), green, 0.2, 0.1);
 
-    amoung_us_helper(w, 3, Point3D(0, 0, 0));
 
-    //Edited version for the disccusion post
-    //body
-//    build_cylinder_helper(w, Point3D(0, 0, .6), red, 0, 1.7, .75, 00);
-//    Sphere* sphere2 = new Sphere(Point3D(0, 0, 2.3), .75);
-//    sphere2->set_material(reflect2);
-//    w->add_object(sphere2);
-//    //mask
-//    build_cylinder_helper(w, Point3D(.3, -0.65, 2.2), white, 0, .6, .25, 90);
-//    Sphere* sphere3 = new Sphere(Point3D(.3, -0.65, 2.2), .25);
-//    sphere3->set_material(reflect3);
-//    w->add_object(sphere3);
-//    Sphere* sphere4 = new Sphere(Point3D(-0.3, -0.65, 2.2), .25);
-//    sphere4->set_material(reflect3);
-//    w->add_object(sphere4);
-//    //legs
-//    build_cylinder_helper(w, Point3D(-0.32, 0, 0), red, 0, .6, .3, 00);
-//    build_cylinder_helper(w, Point3D(0.32, 0, 0), red, 0, .6, .3, 00);
-//    //backpack
-//    add_bb_helper(w, red, Point3D(-0.6, .5, .7), Point3D(0.6, 1, 2.2));
-    //rainbow
-//    RingDims rdp = RingDims(.5, .75, 3.25, 4);
-//    RingDims rdb = RingDims(.75, 1, 4, 5);
-//    RingDims rdg = RingDims(1, 1.25, 5, 7);
-//    RingDims rdy = RingDims(1.25, 1.5, 7, 9);
-//    RingDims rdo = RingDims(1.5, 1.75, 9, 11);
-//    RingDims rdr = RingDims(2, 2.25, 11, 13);
+    double height = 16;
+    double radius = 29.9;
+    double theta = 0;
+    double delta_theta = 45;
+    double x = 1.3;
+    double y = 1;
 
-//    build_ring_helper(w, Point3D(0, 0, 0), red, rdr, -35, phong_ptr36);
-//    build_ring_helper(w, Point3D(0, 0, 0), orange, rdo, -35, phong_ptr36);
-//    build_ring_helper(w, Point3D(0, 0, 0), yellow, rdy, -35, phong_ptr36);
-//    build_ring_helper(w, Point3D(0, 0, 0), green, rdg, -35, phong_ptr36);
-//    build_ring_helper(w, Point3D(0, 0, 0), darkBlue, rdb, -35, phong_ptr36);
-//    build_ring_helper(w, Point3D(0, 0, 0), lightPurple, rdp, -35, phong_ptr36);
 
-   //orginal
-    add_checkerboard(w, grey, white, 1);
+    while (theta < 300) {
+        double x = RADIUS * cos(qDegreesToRadians(theta));
+        double y = RADIUS * sin(qDegreesToRadians(theta));
+        x = abs(x) < 0.001 ? 0 : x;
+        y = abs(y) < 0.001 ? 0 : y;
+        add_bb_facing_center_at(w, orange, RADIUS, theta, 0, 4, 2, 12, 0);
+        theta += delta_theta;
+    }
 
+
+//    while (theta < 210) {
+//        double x = RADIUS * cos(qDegreesToRadians(theta));
+//        double y = RADIUS * sin(qDegreesToRadians(theta));
+//        x = abs(x) < 0.001 ? 0 : x;
+//        y = abs(y) < 0.001 ? 0 : y;
+//        add_bb_facing_center_at(w, orange, RADIUS, theta, 0, 4, 2, 6, 0);
+//        theta += delta_theta;
+//    }
+
+
+//    while (theta < 600) {
+//        add_bb_facing_center_at(w, darkBrown, 0.75 * radius, theta,  4, x, y, 3/15.0 * height, 0);
+
+//        theta = add_double_bb_facing_center_at(w, darkBrown, radius, theta, delta_theta, 4.2, 1.2, 0.7 * height);
+//        theta += delta_theta;
+//    }
+
+//    theta = 75;
+//    delta_theta = 20;
+//    while (theta < 300) {
+//        theta = add_triple_bb_facing_center_at(w, darkBrown, 0.5 * radius, theta, delta_theta, 3.5, 1.2, height);
+//        theta += 1.5 * delta_theta;
+//    }
+
+
+//    theta = 80;
+//    delta_theta = 8 * 15/5.0;
+//    while (theta < 300) {
+//        add_bb_facing_center_at(w, darkBrown, 0.3 * radius, theta,  4, x, y, 3/15.0 * height, 0);
+//        theta += delta_theta;
+//    }
+
+//    x = 4;
+//    y = 2;
+//    theta = 195;
+//    add_bb_facing_center_at_offset_rotation(w, darkBrown, 0.1 * radius, theta,  4, x, y, 7/15.0 * height, 0, 60);
+
+    add_checkerboard(w, darkGreen, lightGreen, 4);
 }
 
-void build_amongUs_world(World* w) {
+void set_camera(World* w, Pinhole* pc, Point3D eye, Point3D lookat, double view_distance, Vector3D up) {
+    pc->set_eye(eye);        // overhead
+    pc->set_lookat(lookat);     // overhead
+
+    pc->set_view_distance(view_distance);    // overhead
+    pc->set_up_vector(up);
+    pc->compute_uvw();
+    w->set_camera(pc);
+}
+
+void build_stonehenge_world(World* w) {
     //camera
     Pinhole* ptr = new Pinhole;
-    //(-17, -20, 3)
-    ptr->set_eye(0, -10, 3);        // overhead
-    ptr->set_lookat(0, 0, 2);     // overhead
-    ptr->set_view_distance(200);    // overhead
-
-    ptr->set_up_vector(0, 0, 1);
-    ptr->compute_uvw();
-    w->set_camera(ptr);
+//    set_camera(w, ptr, Point3D(-22, -20, 24), Point3D(0, 1, -10), 150, Vector3D(0, 0, 1));
+//    set_camera(w, ptr, Point3D(-20, -20, 8), Point3D(0, 1, -10), 200, Vector3D(0, 0, 1));
+//    set_camera(w, ptr, Point3D(-25, -25, 1), Point3D(0, 1, 6), 200, Vector3D(0, 0, 1));
+    set_camera(w, ptr, Point3D(8, 40, 34), Point3D(1, 1, -2), 200, Vector3D(0, 0, 1));
+//    set_camera(w, ptr, Point3D(8, 40, 64), Point3D(0, 10, -10), 200, Vector3D(0, 0, 1));
 
     //viewplane
     int num_samples = 25;
@@ -778,20 +775,145 @@ void build_amongUs_world(World* w) {
     Ambient* ambient_ptr = new Ambient;
     ambient_ptr->scale_radiance(0.2);
     w->set_ambient_light(ambient_ptr);
-    //orginal
-    w->background_color = white;
+    w->background_color =  black;//RGBColor(0.9, 0.9, 0.9);
     w->tracer_ptr = new RayCast(w);
 
     Directional* lt = new Directional();
     lt->set_shadows(true);
-    //changed for olympics
-    lt->set_direction(0, -10, 20);
-    lt->scale_radiance(8.5);
+//    lt->set_direction(100, 100, 16);
+    lt->set_direction(10, 10, 36);
+//    lt->scale_radiance(12.5);
+    lt->scale_radiance(6.5);
     w->add_light(lt);
 
     w->tracer_ptr = new RayCast(w);
 
     w->init_plane();
 
-    build_amoungUs(w);
+    build_stonehenge(w);
 }
+void build_wireframe_helper(World* w, Point3D p0, Point3D p1, double r, RGBColor color) {
+    //(World* w, const Point3D& posn, const RGBColor& color, double b, double t, double r, double x, double y, double z)
+    r = r/2;
+    std::vector<ColorCenterRadius> spheres;
+    build_cylinder_helper(w, Point3D(p0.x, p0.y, p0.z), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 0, 0);
+    build_cylinder_helper(w, Point3D(p1.x / 2, p0.y, p0.z), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 0, 0);
+    build_cylinder_helper(w, Point3D((p1.x - p0.x) / 2 + r/2, p0.y, p0.z), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 90, 0);
+    build_cylinder_helper(w, Point3D((p1.x - p0.x) / 2 + r/2, (p1.y - r) / 2, p0.z), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 90, 0);
+    //spheres back
+    spheres.push_back({color, Point3D(p1.x / 2, p0.y, p0.z), (int)r});
+    spheres.push_back({color, Point3D(p0.x, p0.y, p0.z), (int)r});
+    spheres.push_back({color, Point3D(p1.x / 2, (p1.y - r) / 2, p0.z), (int)r});
+    spheres.push_back({color, Point3D(p0.x, (p1.y - r) / 2, p0.z), (int)r});
+    //right upper/lower pair
+    build_cylinder_helper(w, Point3D((p0.x) / 2 + (1 * r), p0.y + r / 4, p0.z), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 0, 90);
+    build_cylinder_helper(w, Point3D((p0.x) / 2 + (1 * r), (p1.y - p0.y) / 2 - r, p0.z), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 0, 90);
+
+    build_cylinder_helper(w, Point3D(p0.x, p0.y, p1.z / 2), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 0, 0);
+    build_cylinder_helper(w, Point3D(p1.x / 2, p0.y, p1.z / 2), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 0, 0);
+    build_cylinder_helper(w, Point3D((p1.x - p0.x) / 2 + r/2, p0.y, p1.z / 2), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 90, 0);
+    build_cylinder_helper(w, Point3D((p1.x - p0.x) / 2 + r/2, (p1.y - r) / 2, p1.z / 2), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 90, 0);
+    //left upper/lower pair
+    build_cylinder_helper(w, Point3D((p1.x - p0.x) / 2 + .5*r, p0.y + r/4, p0.z), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 0, 90);
+    build_cylinder_helper(w, Point3D((p1.x - p0.x) / 2 + .5*r, (p1.y - p0.y) / 2 - r, p0.z), color, 0.0, (p1.x - p0.x) / 2 - r, r, 0, 0, 90);
+    //spheres front
+    spheres.push_back({color, Point3D(p1.x / 2, p0.y, p1.z / 2), (int)r});
+    spheres.push_back({color, Point3D(p0.x, p0.y, p1.z / 2), (int)r});
+    spheres.push_back({color, Point3D(p1.x / 2, (p1.y - r) / 2, p1.z / 2), (int)r});
+    spheres.push_back({color, Point3D(p0.x, (p1.y - r) / 2, p1.z / 2), (int)r});
+
+    build_spheres_helper(w, spheres);
+}
+
+void build_wireframe_helper(World* w, Point3D p0, double r, double width, double length, double height, RGBColor color) {
+    build_wireframe_helper(w, p0, Point3D(p0.x + width, p0.y + length, p0.z + height), r, color);
+}
+
+void build_figure_12(World* w, int number) {
+    if (number < 12 || number > 14) { throw new std::invalid_argument("Invalid figure requested\n"); }
+
+    if (number == 12) {
+        int radius = 5;
+        int spacing = 2.55 * radius; //2.75
+        std::vector<ColorCenterRadius> spheres =
+            {
+               { darkYellow,   Point3D(  spacing,   0,  -spacing),   radius },
+               { brown,        Point3D(  0,         0,        0),   2 * radius },
+               { darkBlueGrey, Point3D( -spacing,  0,  spacing),   radius }
+            };
+
+
+        build_spheres_helper(w, spheres);
+    }else if (number == 13) {
+        double length = 38, width = 38, height = 38;
+        build_wireframe_helper(w, Point3D(length / 19, 0, 0), length / 19, length, width, height, lightGrey);
+    }
+//    w->background_color =  darkBlack;
+}
+
+void build_figure_12_world(World* w, int number) {
+//    Pinhole* ptr = new Pinhole;
+//    set_camera(w, ptr, Point3D(-25, -10, 60), Point3D(0, 0, 0), 400, Vector3D(0, -1, 0));
+    float vpd = 200; // view-plane distance
+    Pinhole* left_camera_ptr = new Pinhole;
+    left_camera_ptr->set_view_distance(vpd);
+//    left_camera_ptr->set_up_vector(0, 0, 1);
+    Pinhole* right_camera_ptr = new Pinhole;
+    right_camera_ptr->set_view_distance(vpd);
+//    right_camera_ptr->set_up_vector(0, 0, 1);
+    StereoCamera* stereo_ptr = new StereoCamera;
+    stereo_ptr->set_left_camera(left_camera_ptr);
+    stereo_ptr->set_right_camera(right_camera_ptr);
+    stereo_ptr->use_parallel_viewing();
+//    stereo_ptr->use_transverse_viewing();
+    stereo_ptr->set_pixel_gap(0);
+    // in pixels
+    //for spheres
+//    stereo_ptr->set_eye(20, 0, 60); //5, 0, 100
+    //for wireframe (1)
+//    stereo_ptr->set_eye(-10, 5, 60); //5, 0, 100
+    //for wireframe (2)
+    stereo_ptr->set_eye(25, 30, 60); //5, 0, 100
+    //spheres
+//    stereo_ptr->set_lookat(0);
+    //wireframe (1)
+//    stereo_ptr->set_lookat(12, 2, 0);
+    //wireframe (2)
+    stereo_ptr->set_lookat(0, 2, 0);
+    stereo_ptr->compute_uvw();
+    //spheres
+//    stereo_ptr->set_stereo_angle(10);
+    //wireframe
+    stereo_ptr->set_stereo_angle(8);
+    // in degrees
+    stereo_ptr->setup_cameras();
+    w->set_camera(stereo_ptr);
+
+    int num_samples = 25;
+    w->vp.set_hres(VIEWPLANE_HRES);
+    w->vp.set_vres(VIEWPLANE_VRES);
+    w->vp.set_sampler(new Jittered(num_samples));
+    w->vp.set_pixel_size(0.5);
+    w->vp.set_samples(num_samples);
+
+    Ambient* ambient_ptr = new Ambient;
+    ambient_ptr->scale_radiance(0.2);
+    w->set_ambient_light(ambient_ptr);
+//    w->background_color =  black;//RGBColor(0.9, 0.9, 0.9);
+    w->background_color =  RGBColor(0.2, 0.2, 0.2);
+    w->tracer_ptr = new RayCast(w);
+
+    Directional* lt = new Directional();
+    lt->set_shadows(true);
+    lt->set_direction(-10, -10, 36);
+    lt->scale_radiance(6.5);
+    w->add_light(lt);
+
+    w->tracer_ptr = new RayCast(w);
+
+//    w->init_plane();
+    build_figure_12(w, number);
+}
+
+
+

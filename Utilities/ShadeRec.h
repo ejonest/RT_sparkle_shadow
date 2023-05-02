@@ -39,6 +39,10 @@ struct ShadeRec {
 
     int		    depth;				// recursion depth
     float	    t;					// ray parameter
+
+    float       u;
+    float       v;
+
     World&	    w;					// World reference
     RGBColor    color;
 };

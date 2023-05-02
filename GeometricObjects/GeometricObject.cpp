@@ -73,6 +73,7 @@ GeometricObject::get_normal(void) const{ return (Normal()); }
 
 void
 GeometricObject::set_material(std::shared_ptr<Material> mPtr) { material_ptr = mPtr; }
+//void
 //GeometricObject::set_material(Material* mPtr) { material_ptr = mPtr; }
 // ----------------------------------------------------------------------- get_material
 

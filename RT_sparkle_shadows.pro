@@ -76,6 +76,9 @@ SOURCES += \
     Lights/EnvironmentLight.cpp \
     Lights/Light.cpp \
     Lights/PointLight.cpp \
+    Mappings/LightProbeMap.cpp \
+    Mappings/Mapping.cpp \
+    Mappings/SphericalMap.cpp \
     Materials/Dielectric.cpp \
     Materials/Emissive.cpp \
     Materials/GlossyReflector.cpp \
@@ -84,6 +87,7 @@ SOURCES += \
     Materials/Phong.cpp \
     Materials/Plastic.cpp \
     Materials/Reflective.cpp \
+    Materials/SV_Emissive.cpp \
     Materials/SV_Matte.cpp \
     Materials/Transparent.cpp \
     Samplers/Hammersley.cpp \
@@ -119,6 +123,7 @@ SOURCES += \
     UserInterface/oglwidget.cpp \
     UserInterface/qtraytracer.cpp \
     Utilities/BBox.cpp \
+    Utilities/Image.cpp \
     Utilities/Matrix.cpp \
     Utilities/Mesh.cpp \
     Utilities/Normal.cpp \
@@ -205,6 +210,11 @@ HEADERS += \
     Lights/EnvironmentLight.h \
     Lights/Light.h \
     Lights/PointLight.h \
+    Mappings/CylindricalMap.h \
+    Mappings/LightProbeMap.h \
+    Mappings/Mapping.h \
+    Mappings/RectangularMap.h \
+    Mappings/SphericalMap.h \
     Materials/Dielectric.h \
     Materials/Emissive.h \
     Materials/GlossyReflector.h \
@@ -213,6 +223,7 @@ HEADERS += \
     Materials/Phong.h \
     Materials/Plastic.h \
     Materials/Reflective.h \
+    Materials/SV_Emissive.h \
     Materials/SV_Matte.h \
     Materials/Transparent.h \
     Samplers/Hammersley.h \
@@ -275,3 +286,9 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES += \
+    PPM_Images/Earth.ppm \
+    PPM_Images/Mercator.ppm \
+    PPM_Images/SphereGrid.ppm \
+    PPM_Images/sunset.ppm

@@ -50,12 +50,12 @@ void StereoCamera::setup_cameras() {
   double r = eye.distance(lookat);
   double x = r * std::tan(0.5 * beta * PI_ON_180);   // half the camera separation
 
-  left_camera_ptr->set_eye(eye - x * u);
-  left_camera_ptr->set_lookat(lookat - x * u);
+  left_camera_ptr->set_eye(eye - (x * u));//used to be u
+  left_camera_ptr->set_lookat(lookat - (x * u));
   left_camera_ptr->compute_uvw();
 
-  right_camera_ptr->set_eye(eye + x * u);
-  right_camera_ptr->set_lookat(lookat + x * u);
+  right_camera_ptr->set_eye(eye + (x * u));
+  right_camera_ptr->set_lookat(lookat + (x * u));
   right_camera_ptr->compute_uvw();
 }
 

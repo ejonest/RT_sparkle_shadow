@@ -3,6 +3,7 @@
 #include "Cameras/Pinhole.h"
 
 #include "GeometricObjects/GeometricObject.h"
+#include "GeometricObjects/Instance.h"
 #include "GeometricObjects/Primitives/Rectangle.h"
 #include "GeometricObjects/BeveledObjects/BeveledBox.h"
 #include "GeometricObjects/Triangles/Triangle.h"
@@ -88,21 +89,33 @@ void set_cameras_lights(World* w, int fig) {
 }
 
 
-
 void add_sphere_helper(World* w, RGBColor color, Point3D pt, double radius) {
     Sphere*	s = new Sphere(pt, radius);
     w->set_material(s, color);
     w->add_object(s);
 }
 
-void add_bb_helper(World* w, RGBColor color, Point3D p0, Point3D p1, double r) {
-    BeveledBox* bb = new BeveledBox(p0, p1, r);
-    w->set_material(bb, color);
-    w->add_object(bb);
+void add_bb_helper(World* w, RGBColor color, Point3D p0, Point3D p1, Vector3D rotation) {
+    double r = 0.1;
+                          // create box centered on the origin
+    double dx = p1.x - p0.x, dy = p1.y - p0.y, dz = p1.z - p0.z;
+    Instance* isbbox = new Instance(new BeveledBox(Point3D(-dx/2, -dy/2, -dz/2), Point3D(dx/2, dy/2, dz/2), r));
+
+                        // rotate around the origin
+    isbbox->rotate_y(rotation.y );
+    isbbox->rotate_z(rotation.z);
+    isbbox->rotate_x(rotation.x);
+
+                        // then translate it to where it should inallyo
+    isbbox->translate(p0.x, p0.y, p0.z);
+
+    w->set_material(isbbox, color);
+    w->add_object(isbbox);
 }
 
-void add_bb_helper(World* w, RGBColor color, Point3D p0, double dx, double dy, double dz) {
-    add_bb_helper(w, color, p0, Point3D(p0.x + dx, p0.y + dy, p0.z + dz));
+void add_bb_helper(World* w, RGBColor color, Point3D p0, double dx, double dy, double dz, Vector3D rotation) {
+//    qDebug() << "box with z: " << p0.z << " and height: " << dz << " and rot_z: " << rotation.z;
+    add_bb_helper(w, color, p0, Point3D(p0.x + dx, p0.y + dy, p0.z + dz), rotation);
 }
 
 void add_rect_helper(World* w, RGBColor color, Point3D pt,
@@ -129,12 +142,12 @@ void add_triangle_helper(World* w, RGBColor color, Point3D pt0, Point3D pt1, Poi
 }
 
 void build_axis(World* w, RGBColor color_triangle, RGBColor color_axis, double length, double width) {
-    add_bb_helper(w, Qt::red, Point3D(0, 0, 0),  length, width, width);
+    add_bb_helper(w, Qt::red, Point3D(0, 0, 0),  length, width, width, Vector3D());
     add_triangle_helper(w, color_triangle, Point3D(length, 0, 1.2 * width),
                         Point3D(length, 0, -0.6 * width),
                         Point3D(length + 1.2 * width, 0, 0.6 * width));
 
-    add_bb_helper(w, color_axis, Point3D(0, 0, 0),  width, length, width);
+    add_bb_helper(w, color_axis, Point3D(0, 0, 0),  width, length, width, Vector3D());
     add_triangle_helper(w, color_axis, Point3D(0, length, 1.2 * width),
                         Point3D(0, length, -0.6 * width),
                         Point3D(0, length + 1.2 * width, 0.6 * width));

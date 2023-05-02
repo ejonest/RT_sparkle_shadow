@@ -35,6 +35,8 @@ public:
     virtual void 							// This needs to be virtual so that it can be overridden in Compound
     set_material(std::shared_ptr<Material> mPtr); 			// It therefore shouldn't be inlined
 //    set_material(Material* mPtr); 			// It therefore shouldn't be inlined
+//    virtual void
+//    set_material(Material* mPtr);
 
     std::shared_ptr<Material> get_material(void) const;
 
@@ -43,6 +45,9 @@ public:
     void set_color(const float r, const float g, const float b);
 
     RGBColor get_color(void);
+
+    void set_shadows(bool makes_shadows);
+    bool get_shadows() const;
 
     virtual void  set_bounding_box(void);
     virtual BBox  get_bounding_box(void);
@@ -86,5 +91,10 @@ inline void
 
 inline RGBColor GeometricObject::get_color(void) { return (color); }
 
+inline void
+GeometricObject::set_shadows(bool makes_shadows) { shadows = makes_shadows; }
+
+inline bool
+GeometricObject::get_shadows() const { return shadows; }
 
 #endif

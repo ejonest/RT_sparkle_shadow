@@ -44,7 +44,6 @@ public:
     Vector3D& operator+= (const Vector3D& v);
     Vector3D operator- (const Vector3D& v) const;
 
-
     double dot(const Vector3D& b) const;        // dot-product    (orig. code: *)
     Vector3D cross(const Vector3D& v) const;    // cross-product  (orig. code: ^)
 

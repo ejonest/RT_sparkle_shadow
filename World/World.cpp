@@ -308,22 +308,27 @@ void World::init_ambient_light(double radiance) {
 
     ambient->scale_radiance(radiance);
     set_ambient_light(ambient);
-    background_color = black;
+    background_color = RGBColor(0.2, 0.2, 1);;
 }
 
 void World::build() {
 //    build_sphere_world(this);
 //    build_city_world(this);
-//    build_practical_world(this);
+    build_practical_world(this, 130);
 
 //    build_sphere_triangle_box_world(this, A);
 //    build_olympic_rings_world(this);    // TODO:  fill in code in Worlds.cpp, , adjust lights and cameras, and run
 
-//    build_figure_10_10(this, A);         //  to generate 10.10a, b or c    --- thin lens
+//    build_figure_10_10(this, C);         //  to generate 10.10a, b or c    --- thin lens
 
 //    build_mcdonalds_world(this);
 
-    build_amongUs_world(this);
+//    build_stonehenge_world(this);
+
+//    build_figure_12(this, 12);
+//    build_figure_12_world(this, 13);
+
+
 
     check();  // checks for valid camera, viewplane, lights, plane...
 }
